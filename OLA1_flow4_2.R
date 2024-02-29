@@ -343,7 +343,6 @@ server <- function(input, output, session) {
     } else {
 
     }
-    
   })  
   
 }
