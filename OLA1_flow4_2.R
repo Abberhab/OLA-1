@@ -21,7 +21,7 @@ df_matchid <- fromJSON(toJSON(mongoquery1), flatten = T)
 
 #afleveringer <- readRDS("Alt data flatten")
 #skud <- fromJSON(toJSON(mongoquery), flatten = T)
-setwd("/Users/marius/Documents/DataAnalyseProjekter/2. Semester/OLA'er/OLA-1")
+#setwd("/Users/marius/Documents/DataAnalyseProjekter/2. Semester/OLA'er/OLA-1")
 df_s <- readRDS("Alt_data_flatten")
 
 # Fjerner NA
@@ -52,11 +52,11 @@ df$plads <- ifelse(df$team.name %in% c(polskeliga_top,holdandskeliga_top), "Top"
 
 # Funktion til indeling af positioner
 spillerPos <- function(position) {
-  if (grepl("CB|RCB|LCB|GK", position)) {
+  if (grepl("CB|RCB|RCB3|LCB|LCB3|GK|RB|LB|RB5|LB5|RWB|LWB", position)) {
     return("Forsvar")
-  } else if (grepl("DMF|LDMF|RDMF|RCMF|LCMF", position)) {
+  } else if (grepl("DMF|LDMF|RDMF|RCMF|LCMF|RCMF3|LCMF3|AMF|LAMF|RAMF", position)) {
     return("Midtbane")
-  } else if (grepl("CF|SS|AMF|LAMF|RAMF|RWF|LWF|RW|LW", position)) {
+  } else if (grepl("CF|SS|RWF|LWF|RW|LW", position)) {
     return("Angreb")
   } else {
     return(NA)
@@ -66,6 +66,8 @@ spillerPos <- function(position) {
 # Laver ny kolonne i df_s baseret på spiller positionen
 df_s$poss <- sapply(1:nrow(df_s), function(i) spillerPos(df_s$player.position[i]))
 
+# Fjerner NA
+df_s <- df_s[!is.na(df_s$poss), ]
 
 
 ######UI######
@@ -116,6 +118,10 @@ ui <- fluidPage(theme = shinytheme("flatly"),navbarPage("Statistik over fodbolds
                                                                  ),
                                                                  mainPanel(
                                                                    plotOutput("sammenlign_plot"),
+                                                                   fluidRow(
+                                                                     column(width = 8,
+                                                                            dataTableOutput("pass_table"))
+                                                                   )
                                                                  )
                                                         ),
                                                         tabPanel("Målramme",
@@ -186,7 +192,7 @@ server <- function(input, output, session) {
       min2 <- input$minut1[2]
 
         df_mean_pass <- df %>% 
-          filter(holdvalg == team.name, sæsonid == seasonId, minute >= min1 & minute <= min2) %>% 
+          filter(team.name == holdvalg, seasonId == sæsonid, minute >= min1 & minute <= min2) %>% 
           group_by(team.name, plads) %>%
           summarise(average_length = mean(pass.length))
 
@@ -224,7 +230,7 @@ server <- function(input, output, session) {
       min2 <- input$minut1[2]
       
       df %>% 
-        filter(holdvalg == team.name, sæsonid == seasonId, minute >= min1 & minute <= min2) %>%
+        filter(team.name == holdvalg, seasonId == sæsonid, minute >= min1 & minute <= min2) %>%
         group_by(Holdnavn = team.name, Placering = plads) %>%
         summarise(
           Succesfulde = sum(pass.accurate == TRUE),
@@ -251,30 +257,30 @@ server <- function(input, output, session) {
       if (assist2 == TRUE) {
         
       df_mean_pass_1 <- df_s %>% 
-        filter(sæsonid == seasonId, minute >= min21_1 & minute <= min21_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
+        filter(seasonId == sæsonid, minute >= min21_1 & minute <= min21_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
         group_by(team.name) %>%
         summarise(average_length_1 = mean(pass.length))
       
       df_mean_pass_2 <- df_s %>% 
-        filter(sæsonid == seasonId, minute >= min22_1 & minute <= min22_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
+        filter(seasonId == sæsonid, minute >= min22_1 & minute <= min22_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
         group_by(team.name) %>%
         summarise(average_length_2 = mean(pass.length))
       
       } else {
         df_mean_pass_1 <- df_s %>% 
-          filter(sæsonid == seasonId, minute >= min21_1 & minute <= min21_2) %>% 
+          filter(seasonId == sæsonid, minute >= min21_1 & minute <= min21_2) %>% 
           group_by(team.name) %>%
           summarise(average_length_1 = mean(pass.length))
         
         df_mean_pass_2 <- df_s %>% 
-          filter(sæsonid == seasonId, minute >= min22_1 & minute <= min22_2) %>% 
+          filter(seasonId == sæsonid, minute >= min22_1 & minute <= min22_2) %>% 
           group_by(team.name) %>%
           summarise(average_length_2 = mean(pass.length))
       }
 
         df_hold_2 <- df_s %>% 
           ungroup %>% 
-          filter(sæsonid == seasonId) %>% 
+          filter(seasonId == sæsonid) %>% 
           select(team.name) %>% 
           distinct()
         
@@ -309,39 +315,88 @@ server <- function(input, output, session) {
   output$pass_table <- renderDataTable({
     
     # Definerer valg fra UI
-    Land3 = input$land2
-    season3 = input$season2
-    assist3 = input$assist2
+    Land2 = input$land2
+    season2 = input$season2
+    assist2 = input$assist2
     
     sæsonid<- ifelse(Land2 == "Holland",187502,186215)
-    min31_1 <- input$minut21[1]
-    min31_2 <- input$minut21[2]
+    min21_1 <- input$minut21[1]
+    min21_2 <- input$minut21[2]
     
-    min32_1 <- input$minut22[1]
-    min32_2 <- input$minut22[2]
-    
-    # Variable til at teste
-    Land2 <- "Holland"
-    season2 <- "21/22"
-    assist2 <- FALSE
-    seasonid <- 187502
-    min21_1 <- 0
-    min21_2 <- 90
-    min22_1 <- 50
-    min22_2 <- 90
+    min22_1 <- input$minut22[1]
+    min22_2 <- input$minut22[2]
     
     if (assist2 == TRUE) {
       
-      # Virker ikke :()
-      df_pct_pass <- df_s %>% 
-        filter(seasonId == seasonid, minute >= min21_1 & minute <= min21_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
+      # Virker :-D
+      result <- df_s %>%
+        filter(seasonId == sæsonid, minute >= min21_1 & minute <= min21_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
         group_by(team.name, poss) %>%
-        summarise(pass_percentage = n() / nrow(df_s) * 100) %>% 
-        spread(poss, pass_percentage, fill = 0) %>% 
-        arrange(team.name)
+        summarise(count = n()) %>%
+        group_by(team.name) %>%
+        mutate(percentage = paste(round(count/sum(count)*100,2), "%")) %>%
+        select(-count) %>%
+        spread(key = poss, value = percentage, fill = "0%") %>% 
+        select(team.name, Forsvar, Midtbane, Angreb)
+      
+      result1 <- df_s %>%
+        filter(seasonId == sæsonid, minute >= min22_1 & minute <= min22_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
+        group_by(team.name, poss) %>%
+        summarise(count = n()) %>%
+        group_by(team.name) %>%
+        mutate(percentage = paste(round(count/sum(count)*100,2), "%")) %>%
+        select(-count) %>%
+        spread(key = poss, value = percentage, fill = "0%") %>% 
+        select(team.name, Forsvar, Midtbane, Angreb)
+      
+      Christians_ide <- Christians_ide %>% 
+        select(team.name, Forsvar.x, Forsvar.y, Midtbane.x, Midtbane.y, Angreb.x, Angreb.y)
+      
+      colnames(Christians_ide) <- c("Holdnavn", 
+                                    paste0("Forsvar ",min21_1," - ", min21_2),
+                                    paste0("Forsvar ",min22_1," - ", min22_2),
+                                    paste0("Midtbane ",min21_1," - ", min21_2),
+                                    paste0("Midtbane ",min22_1," - ", min22_2),
+                                    paste0("Angreb ",min21_1," - ", min21_2),
+                                    paste0("Angreb ",min22_1," - ", min22_2))
+      
+      return(Christians_ide)
       
     } else {
-
+      
+      result <- df_s %>%
+        filter(seasonId == sæsonid, minute >= min21_1 & minute <= min21_2) %>% 
+        group_by(team.name, poss) %>%
+        summarise(count = n()) %>%
+        group_by(team.name) %>%
+        mutate(percentage = paste(round(count/sum(count)*100,2), "%")) %>%
+        select(-count) %>%
+        spread(key = poss, value = percentage, fill = "0%")
+      
+      result1 <- df_s %>%
+        filter(seasonId == sæsonid, minute >= min22_1 & minute <= min22_2) %>% 
+        group_by(team.name, poss) %>%
+        summarise(count = n()) %>%
+        group_by(team.name) %>%
+        mutate(percentage = paste(round(count/sum(count)*100,2), "%")) %>%
+        select(-count) %>%
+        spread(key = poss, value = percentage, fill = "0%") %>% 
+        select(team.name, Forsvar, Midtbane, Angreb)
+      
+      Christians_ide <- left_join(result, result1, by = "team.name")
+      
+      Christians_ide <- Christians_ide %>% 
+        select(team.name, Forsvar.x, Forsvar.y, Midtbane.x, Midtbane.y, Angreb.x, Angreb.y)
+      
+      colnames(Christians_ide) <- c("Holdnavn", 
+                                    paste0("Forsvar ",min21_1," - ", min21_2),
+                                    paste0("Forsvar ",min22_1," - ", min22_2),
+                                    paste0("Midtbane ",min21_1," - ", min21_2),
+                                    paste0("Midtbane ",min22_1," - ", min22_2),
+                                    paste0("Angreb ",min21_1," - ", min21_2),
+                                    paste0("Angreb ",min22_1," - ", min22_2))
+      
+      return(Christians_ide)
     }
   })  
   
