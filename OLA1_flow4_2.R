@@ -11,12 +11,12 @@ library(reshape2)
 
 #####Indhentning af data#####
 
-con <- mongo(url = "mongodb://cphola:Cph&Ola123@85.218.176.24:28574/", db = "WyScout", collection = "games")
-mongoquery <- con$find(query = '{"type.primary": "shot"}')
+#con <- mongo(url = "mongodb://cphola:Cph&Ola123@85.218.176.24:28574/", db = "WyScout", collection = "games")
+#mongoquery <- con$find(query = '{"type.primary": "shot"}')
 
-con1 <- mongo(url = "mongodb://cphola:Cph&Ola123@85.218.176.24:28574/", db = "WyScout", collection = "matches")
-mongoquery1 <- con1$find(query = '{"seasonId": {"$in": [187502, 186215]}}')
-df_matchid <- fromJSON(toJSON(mongoquery1), flatten = T)
+#con1 <- mongo(url = "mongodb://cphola:Cph&Ola123@85.218.176.24:28574/", db = "WyScout", collection = "matches")
+#mongoquery1 <- con1$find(query = '{"seasonId": {"$in": [187502, 186215]}}')
+#df_matchid <- fromJSON(toJSON(mongoquery1), flatten = T)
 
 
 #afleveringer <- readRDS("Alt data flatten")
@@ -72,103 +72,81 @@ df_s <- df_s[!is.na(df_s$poss), ]
 
 ######UI######
 # Define UI for application that draws a histogram
-ui <- fluidPage(theme = shinytheme("flatly"),navbarPage("Statistik over fodboldspillere",
-                                                        tabPanel("Skudforsøg",
-                                                                 sidebarPanel(
-                                                                   selectInput("land1",
-                                                                               label = " Vælg land",
-                                                                               choices = c("Holland", "Polen"),
-                                                                               selected = "Holland"),
-                                                                   selectInput("season1",
-                                                                               label = "Vælg sæson",
-                                                                               choices = c("21/22"),
-                                                                               selected = "21/22"),
-                                                                   sliderInput("minut1", "Vælg interval:",
-                                                                               min = 0, max = 90, value = c(0, 90),
-                                                                               step = 1)
-                                                                 ),
-                                                                 mainPanel(
-                                                                   plotOutput("TopBundPlot"),
-                                                                   fluidRow(
-                                                                     column(width = 8,
-                                                                            dataTableOutput("succes1")
-                                                                     )
-                                                                   )
-                                                                 )
-                                                                   ),
-                                                        tabPanel("Sammenligning",
-                                                                 sidebarPanel(
-                                                                   selectInput("land2",
-                                                                               label = " Vælg land",
-                                                                               choices = c("Holland", "Polen"),
-                                                                               selected = "Holland"),
-                                                                   selectInput("season2",
-                                                                               label = "Vælg sæson",
-                                                                               choices = c("21/22"),
-                                                                               selected = "21/22"),
-                                                                   checkboxInput("assist2",
-                                                                                 value = FALSE,
-                                                                                 label = "Aflevering skal være assist"),
-                                                                   sliderInput("minut21", "Vælg første interval:",
-                                                                               min = 0, max = 90, value = c(0, 90),
-                                                                               step = 1),
-                                                                   sliderInput("minut22", "Vælg andet interval:",
-                                                                               min = 0, max = 90, value = c(0, 90),
-                                                                               step = 1)
-                                                                 ),
-                                                                 mainPanel(
-                                                                   plotOutput("sammenlign_plot"),
-                                                                   fluidRow(
-                                                                     column(width = 8,
-                                                                            dataTableOutput("pass_table"))
-                                                                   )
-                                                                 )
-                                                        ),
-                                                        tabPanel("Målramme",
-                                                                 sidebarPanel(
-                                                                   selectInput("L",
-                                                                               label = " Vælg land",
-                                                                               choices = c("Holland", "Polen"),
-                                                                               selected = "Polen"),
-                                                                   selectInput("plname1",
-                                                                               label = "Vælg spiller",
-                                                                               choices = ""),
-                                                                   selectInput("Skud1",
-                                                                               label = "Skal den være indenfor målrammen?",
-                                                                               choices = c("Ja", "Nej", "Blandet"),
-                                                                               selected = "Blandet"),
-                                                                   tableOutput("playerstat1")
-                                                                 ),
-                                                                 mainPanel(
-                                                                   plotOutput("målramme"),
-                                                                   fluidRow(
-                                                                     column(width = 8,
-                                                                            dataTableOutput("playertab1")  
-                                                                     )
-                                                                   )
-                                                                 )
-                                                        ),
-                                                        tabPanel("Stats",
-                                                                 sidebarPanel(
-                                                                   selectInput("Land2",
-                                                                               label = " Vælg land",
-                                                                               choices = c("Holland", "Polen"),
-                                                                               selected = "Polen"),
-                                                                   selectInput("hold",
-                                                                               label = "Vælg hold",
-                                                                               choices = ""),
-                                                                   selectInput("pval3",
-                                                                               label = "Vælg spiller",
-                                                                               choices = "")
-                                                                 ),
-                                                                 mainPanel(
-                                                                   plotOutput("Heat_map"),
-                                                                   dataTableOutput("hold")
-                                                                   
-                                                                 )
-                                                        )
-                                                  )
-                                                        )
+ui <- fluidPage(
+  theme = shinytheme("flatly"),
+  navbarPage(
+    "Statistik over fodboldspillere",
+    tabPanel(
+      "Skudforsøg",
+      sidebarPanel(
+        selectInput("land1",
+                    label = " Vælg land",
+                    choices = c("Holland", "Polen"),
+                    selected = "Holland"),
+        selectInput("season1",
+                    label = "Vælg sæson",
+                    choices = c("21/22"),
+                    selected = "21/22"),
+        sliderInput("minut1", "Vælg interval:",
+                    min = 0, max = 90, value = c(0, 90),
+                    step = 1)
+      ),
+      mainPanel(
+        plotOutput("TopBundPlot"),
+        fluidRow(
+          column(width = 8,
+                 dataTableOutput("succes1")
+          )
+        )
+      )
+    ),
+    tabPanel(
+      "Sammenligning",
+      sidebarPanel(
+        selectInput("land2",
+                    label = " Vælg land",
+                    choices = c("Holland", "Polen"),
+                    selected = "Holland"),
+        selectInput("season2",
+                    label = "Vælg sæson",
+                    choices = c("21/22"),
+                    selected = "21/22"),
+        checkboxInput("assist2",
+                      value = FALSE,
+                      label = "Aflevering skal være assist"),
+        sliderInput("minut21", "Vælg første interval:",
+                    min = 0, max = 90, value = c(0, 90),
+                    step = 1),
+        sliderInput("minut22", "Vælg andet interval:",
+                    min = 0, max = 90, value = c(0, 90),
+                    step = 1)
+      ),
+      mainPanel(
+        plotOutput("sammenlign_plot"),
+        fluidRow(
+          column(width = 8,
+                 dataTableOutput("pass_table")
+          )
+        )
+      )
+    ),
+    tabPanel(
+      "Topspillere",
+      sidebarPanel(
+        selectInput("land3", label = " Vælg land", choices = c("Holland", "Polen"), selected = "Holland"),
+        selectInput("season3", label = "Vælg sæson", choices = c("21/22"), selected = "21/22")
+      ),
+      mainPanel(
+        plotOutput("top10plot"),
+        fluidRow(
+          column(width = 8, dataTableOutput("top10"))
+        )
+      )
+    )
+  )
+)
+
+
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -206,13 +184,14 @@ server <- function(input, output, session) {
              caption = "Datakilde: WyScout") +
         scale_y_continuous(breaks = seq(min(0), max(ceiling(max(df_mean_pass$average_length) / 5) * 5), by = 5),
                            labels = scales::label_number(suffix = "m")) +
-        coord_cartesian(ylim = c(0, ceiling(max(ceiling(max(df_mean_pass$average_length) / 5) * 5)))) + # Corrected coordinate limits
+        coord_cartesian(ylim = c(0, ceiling(max(ceiling(max(df_mean_pass$average_length) / 5) * 5)))) +
         scale_fill_manual(values = c("Bund" = "#d42a30", "Top" = "steelblue4"), 
                           name = "Niveau") +
         theme_minimal() +
         theme(axis.text.x = element_text(angle = 45, hjust = 1),
               plot.title = element_text(face = "bold"),
-              text = element_text(family = "Verdana"))  
+              text = element_text(family = "Verdana"),
+              panel.grid.major.x = element_blank())  
       
       
       
@@ -309,7 +288,8 @@ server <- function(input, output, session) {
         theme_minimal() +
         theme(axis.text.x = element_text(angle = 45, hjust = 1),
               plot.title = element_text(face = "bold"),
-              text = element_text(family = "Verdana"))  
+              text = element_text(family = "Verdana"),
+              panel.grid.major.x = element_blank())  
     })
     # Laver tabel til afleveringer på positioner
   output$pass_table <- renderDataTable({
@@ -348,6 +328,8 @@ server <- function(input, output, session) {
         select(-count) %>%
         spread(key = poss, value = percentage, fill = "0%") %>% 
         select(team.name, Forsvar, Midtbane, Angreb)
+      
+      Christians_ide <- left_join(result, result1, by = "team.name")
       
       Christians_ide <- Christians_ide %>% 
         select(team.name, Forsvar.x, Forsvar.y, Midtbane.x, Midtbane.y, Angreb.x, Angreb.y)
@@ -399,7 +381,39 @@ server <- function(input, output, session) {
       return(Christians_ide)
     }
   })  
-  
+  output$top10plot <- renderPlot({
+    #Vælger land og finder top 10 spillere
+    Land3 <- input$land3
+    season3 <- input$season3
+    if (Land3 == "Holland") {
+      holdvalg <- c(holdandskeliga_bund, holdandskeliga_top)
+    } else {
+      holdvalg <- c(polskeliga_bund, polskeliga_top)
+    }
+    sæsonid <- ifelse(Land3 == "Holland", 187502, 186215)
+    
+    top10 <- df_s %>%
+      filter(seasonId == sæsonid) %>%
+      group_by(player.name) %>%
+      summarise(assist = sum(sapply(type.secondary, function(x) "assist" %in% x))) %>% 
+      arrange(desc(assist)) %>%
+      slice_head(n = 10) 
+    
+    ggplot(top10, aes(x = reorder(player.name, -assist), y = assist)) +
+      geom_bar(stat = "identity", fill = "steelblue4") +
+      labs(title = "Top 10 spillere med flest assists",
+           subtitle = ifelse(Land3 == "Holland", "I den hollandske liga (Eredivisie) sæson 21/22", "I den polske liga (Ekstraklasa) sæson 21/22"),
+           x = "Spillernavn",
+           y = "Antal assists",
+           caption = "Datakilde: WyScout") +
+      scale_y_continuous(breaks = seq(0, max(ceiling(max(top10$assist) / 2) * 2), by = 2),
+                         limits = c(0, ceiling(max(ceiling(max(top10$assist) / 2) * 2)))) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+            plot.title = element_text(face = "bold"),
+            text = element_text(family = "Verdana"),
+            panel.grid.major.x = element_blank())
+  })
 }
 
 # Run the application 
