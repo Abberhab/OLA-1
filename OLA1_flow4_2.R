@@ -19,14 +19,15 @@ mongoquery1 <- con1$find(query = '{"seasonId": {"$in": [187502, 186215]}}')
 df_matchid <- fromJSON(toJSON(mongoquery1), flatten = T)
 
 
+#afleveringer <- readRDS("Alt data flatten")
+#skud <- fromJSON(toJSON(mongoquery), flatten = T)
+#setwd("/Users/marius/Documents/DataAnalyseProjekter/2. Semester/OLA'er/OLA-1")
+df_s <- readRDS("Alt_data_flatten")
 
-afleveringer <- readRDS("Alt data flatten")
-skud <- fromJSON(toJSON(mongoquery), flatten = T)
-#setwd("C:/Users/chrje/OneDrive/Skrivebord - gammel/Dataanlyse/Semester 2/Fodbold data")
-df_s <- readRDS("Alt data flatten")
-
-# minutter opdeling
+# Fjerner NA
 df_s <- df_s[!is.na(df_s$matchId), ]
+
+# Laver minutter
 #df_s <- df_s %>%  group_by(matchId) %>% mutate(Minutter = cut(minute, breaks = seq(-1, 99, by = 10), 
                                                             #  labels = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", 
                                                                  #        "60-69", "70-79", "80-89", "90+"))) 
@@ -49,8 +50,24 @@ df <- df_s %>%
 
 df$plads <- ifelse(df$team.name %in% c(polskeliga_top,holdandskeliga_top), "Top", "Bund")
 
+# Funktion til indeling af positioner
+spillerPos <- function(position) {
+  if (grepl("CB|RCB|RCB3|LCB|LCB3|GK|RB|LB|RB5|LB5|RWB|LWB", position)) {
+    return("Forsvar")
+  } else if (grepl("DMF|LDMF|RDMF|RCMF|LCMF|RCMF3|LCMF3|AMF|LAMF|RAMF", position)) {
+    return("Midtbane")
+  } else if (grepl("CF|SS|RWF|LWF|RW|LW", position)) {
+    return("Angreb")
+  } else {
+    return(NA)
+  }
+}
 
+# Laver ny kolonne i df_s baseret på spiller positionen
+df_s$poss <- sapply(1:nrow(df_s), function(i) spillerPos(df_s$player.position[i]))
 
+# Fjerner NA
+df_s <- df_s[!is.na(df_s$poss), ]
 
 
 ######UI######
@@ -101,6 +118,10 @@ ui <- fluidPage(theme = shinytheme("flatly"),navbarPage("Statistik over fodbolds
                                                                  ),
                                                                  mainPanel(
                                                                    plotOutput("sammenlign_plot"),
+                                                                   fluidRow(
+                                                                     column(width = 8,
+                                                                            dataTableOutput("pass_table"))
+                                                                   )
                                                                  )
                                                         ),
                                                         tabPanel("Målramme",
@@ -171,7 +192,7 @@ server <- function(input, output, session) {
       min2 <- input$minut1[2]
 
         df_mean_pass <- df %>% 
-          filter(holdvalg == team.name, sæsonid == seasonId, minute >= min1 & minute <= min2) %>% 
+          filter(team.name == holdvalg, seasonId == sæsonid, minute >= min1 & minute <= min2) %>% 
           group_by(team.name, plads) %>%
           summarise(average_length = mean(pass.length))
 
@@ -209,7 +230,7 @@ server <- function(input, output, session) {
       min2 <- input$minut1[2]
       
       df %>% 
-        filter(holdvalg == team.name, sæsonid == seasonId, minute >= min1 & minute <= min2) %>%
+        filter(team.name == holdvalg, seasonId == sæsonid, minute >= min1 & minute <= min2) %>%
         group_by(Holdnavn = team.name, Placering = plads) %>%
         summarise(
           Succesfulde = sum(pass.accurate == TRUE),
@@ -221,14 +242,12 @@ server <- function(input, output, session) {
       
     })   
       ###### Opgave 2.1.2 - Ny graf ######
-  output$sammenlign_plot <- renderPlot({
+    output$sammenlign_plot <- renderPlot({
       Land2 = input$land2
       season2 = input$season2
       assist2 = input$assist2
       
-      #finder top_bund ud fra sæson i df
-      
-      sæsonid<- ifelse(Land2 == "Holland",187502,186215)
+      sæsonid <- ifelse(Land2 == "Holland",187502,186215)
       min21_1 <- input$minut21[1]
       min21_2 <- input$minut21[2]
       
@@ -238,38 +257,36 @@ server <- function(input, output, session) {
       if (assist2 == TRUE) {
         
       df_mean_pass_1 <- df_s %>% 
-        filter(sæsonid == seasonId, minute >= min21_1 & minute <= min21_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
+        filter(seasonId == sæsonid, minute >= min21_1 & minute <= min21_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
         group_by(team.name) %>%
         summarise(average_length_1 = mean(pass.length))
       
       df_mean_pass_2 <- df_s %>% 
-        filter(sæsonid == seasonId, minute >= min22_1 & minute <= min22_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
+        filter(seasonId == sæsonid, minute >= min22_1 & minute <= min22_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
         group_by(team.name) %>%
         summarise(average_length_2 = mean(pass.length))
       
       } else {
         df_mean_pass_1 <- df_s %>% 
-          filter(sæsonid == seasonId, minute >= min21_1 & minute <= min21_2) %>% 
+          filter(seasonId == sæsonid, minute >= min21_1 & minute <= min21_2) %>% 
           group_by(team.name) %>%
           summarise(average_length_1 = mean(pass.length))
         
         df_mean_pass_2 <- df_s %>% 
-          filter(sæsonid == seasonId, minute >= min22_1 & minute <= min22_2) %>% 
+          filter(seasonId == sæsonid, minute >= min22_1 & minute <= min22_2) %>% 
           group_by(team.name) %>%
           summarise(average_length_2 = mean(pass.length))
       }
 
         df_hold_2 <- df_s %>% 
           ungroup %>% 
-          filter(sæsonid == seasonId) %>% 
+          filter(seasonId == sæsonid) %>% 
           select(team.name) %>% 
           distinct()
         
         merge_df <- merge(df_hold_2, df_mean_pass_1, by = "team.name", all.x = TRUE)
         merge_df <- merge(merge_df, df_mean_pass_2, by = "team.name", all.x = TRUE)
         merge_df[is.na(merge_df)] <- 0
-      
-        #df_mean_pass_3 <- cbind(df_mean_pass_1, df_mean_pass_2[,2])
       
         df_mean_pass_4 <- melt(merge_df, id.vars = "team.name")
 
@@ -294,6 +311,95 @@ server <- function(input, output, session) {
               plot.title = element_text(face = "bold"),
               text = element_text(family = "Verdana"))  
     })
+    # Laver tabel til afleveringer på positioner
+  output$pass_table <- renderDataTable({
+    
+    # Definerer valg fra UI
+    Land2 = input$land2
+    season2 = input$season2
+    assist2 = input$assist2
+    
+    sæsonid<- ifelse(Land2 == "Holland",187502,186215)
+    min21_1 <- input$minut21[1]
+    min21_2 <- input$minut21[2]
+    
+    min22_1 <- input$minut22[1]
+    min22_2 <- input$minut22[2]
+    
+    if (assist2 == TRUE) {
+      
+      # Virker :-D
+      result <- df_s %>%
+        filter(seasonId == sæsonid, minute >= min21_1 & minute <= min21_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
+        group_by(team.name, poss) %>%
+        summarise(count = n()) %>%
+        group_by(team.name) %>%
+        mutate(percentage = paste(round(count/sum(count)*100,2), "%")) %>%
+        select(-count) %>%
+        spread(key = poss, value = percentage, fill = "0%") %>% 
+        select(team.name, Forsvar, Midtbane, Angreb)
+      
+      result1 <- df_s %>%
+        filter(seasonId == sæsonid, minute >= min22_1 & minute <= min22_2, sapply(type.secondary, function(x) "assist" %in% x)) %>% 
+        group_by(team.name, poss) %>%
+        summarise(count = n()) %>%
+        group_by(team.name) %>%
+        mutate(percentage = paste(round(count/sum(count)*100,2), "%")) %>%
+        select(-count) %>%
+        spread(key = poss, value = percentage, fill = "0%") %>% 
+        select(team.name, Forsvar, Midtbane, Angreb)
+      
+      Christians_ide <- Christians_ide %>% 
+        select(team.name, Forsvar.x, Forsvar.y, Midtbane.x, Midtbane.y, Angreb.x, Angreb.y)
+      
+      colnames(Christians_ide) <- c("Holdnavn", 
+                                    paste0("Forsvar ",min21_1," - ", min21_2),
+                                    paste0("Forsvar ",min22_1," - ", min22_2),
+                                    paste0("Midtbane ",min21_1," - ", min21_2),
+                                    paste0("Midtbane ",min22_1," - ", min22_2),
+                                    paste0("Angreb ",min21_1," - ", min21_2),
+                                    paste0("Angreb ",min22_1," - ", min22_2))
+      
+      return(Christians_ide)
+      
+    } else {
+      
+      result <- df_s %>%
+        filter(seasonId == sæsonid, minute >= min21_1 & minute <= min21_2) %>% 
+        group_by(team.name, poss) %>%
+        summarise(count = n()) %>%
+        group_by(team.name) %>%
+        mutate(percentage = paste(round(count/sum(count)*100,2), "%")) %>%
+        select(-count) %>%
+        spread(key = poss, value = percentage, fill = "0%")
+      
+      result1 <- df_s %>%
+        filter(seasonId == sæsonid, minute >= min22_1 & minute <= min22_2) %>% 
+        group_by(team.name, poss) %>%
+        summarise(count = n()) %>%
+        group_by(team.name) %>%
+        mutate(percentage = paste(round(count/sum(count)*100,2), "%")) %>%
+        select(-count) %>%
+        spread(key = poss, value = percentage, fill = "0%") %>% 
+        select(team.name, Forsvar, Midtbane, Angreb)
+      
+      Christians_ide <- left_join(result, result1, by = "team.name")
+      
+      Christians_ide <- Christians_ide %>% 
+        select(team.name, Forsvar.x, Forsvar.y, Midtbane.x, Midtbane.y, Angreb.x, Angreb.y)
+      
+      colnames(Christians_ide) <- c("Holdnavn", 
+                                    paste0("Forsvar ",min21_1," - ", min21_2),
+                                    paste0("Forsvar ",min22_1," - ", min22_2),
+                                    paste0("Midtbane ",min21_1," - ", min21_2),
+                                    paste0("Midtbane ",min22_1," - ", min22_2),
+                                    paste0("Angreb ",min21_1," - ", min21_2),
+                                    paste0("Angreb ",min22_1," - ", min22_2))
+      
+      return(Christians_ide)
+    }
+  })  
+  
 }
 
 # Run the application 
