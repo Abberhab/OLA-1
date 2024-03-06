@@ -7,6 +7,7 @@ library(jsonlite)
 library(ggsoccer)
 
 #####Indhentning af data#####
+
 df <- readRDS("Shot_flat")
 df_af <- readRDS("Alt data flatten")
 df <- df %>% rowwise() %>% mutate(match=str_split(label,",")[[1]][1],
@@ -132,7 +133,7 @@ server <- function(input, output,session) {
         group_by(player.name) %>% 
         summarise(
           Antal_mål = sum(shot.isGoal == TRUE),
-          Sum_af_xG = sum(shot.xg[shot.isGoal == TRUE])
+          Sum_af_xG = sum(shot.xg)
         ) %>% 
         filter(Antal_mål >= sgoal)
         
@@ -166,9 +167,7 @@ server <- function(input, output,session) {
       hold <- df_af %>% 
         filter(competitionId == land) %>% 
         select(team.name) %>% 
-        distinct() %>% 
-        arrange(team.name)
-        
+        distinct()
       
       # Opdaterer input til at vælg hjemmehold
       updateSelectInput(session, "hold",
@@ -219,8 +218,7 @@ server <- function(input, output,session) {
       
       hold <- df_opg2 %>% 
         select(home) %>% 
-        distinct() %>% 
-        arrange(home)
+        distinct()
 
       
       # Opdaterer input til at vælg hjemmehold
@@ -313,8 +311,7 @@ server <- function(input, output,session) {
       hold1 <- df_af %>% 
         filter(label == input$kamp2) %>% 
         select(team.name) %>%
-        distinct() %>% 
-        arrange(team.name)
+        distinct()
       
       # Opdaterer input til at vælge spiller
       updateSelectInput(session, "hold3",
