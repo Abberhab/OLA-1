@@ -7,25 +7,6 @@ library(jsonlite)
 library(ggsoccer)
 
 #####Indhentning af data#####
-
-con <- mongo(url = "mongodb://cphola:Cph&Ola123@192.168.1.70:28574/", db = "WyScout", collection = "games")
-mongoquery <- con$find(query = '{"type.primary": "shot"}')
-
-con1 <- mongo(url = "mongodb://cphola:Cph&Ola123@192.168.1.70:28574/", db = "WyScout", collection = "matches")
-mongoquery1 <- con1$find(fields = '{}')
-
-con2 <- mongo(url = "mongodb://cphola:Cph&Ola123@192.168.1.70:28574/", db = "WyScout", collection = "players")
-mongoquery2 <- con2$find(fields = '{}')
-
-df_matchid <- fromJSON(toJSON(mongoquery1), flatten = T)
-df_players <- fromJSON(toJSON(mongoquery2), flatten = T)
-df_games <- fromJSON(toJSON(mongoquery), flatten = T)
-
-df <- left_join(df_games, df_matchid, by = c("matchId" = "_id"))
-df <- left_join(df, df_players, by = c("player.id" = "_id"))
-
-
-saveRDS(df,"Shot_flat")
 df <- readRDS("Shot_flat")
 df_af <- readRDS("Alt data flatten")
 df <- df %>% rowwise() %>% mutate(match=str_split(label,",")[[1]][1],
@@ -185,7 +166,9 @@ server <- function(input, output,session) {
       hold <- df_af %>% 
         filter(competitionId == land) %>% 
         select(team.name) %>% 
-        distinct()
+        distinct() %>% 
+        arrange(team.name)
+        
       
       # Opdaterer input til at vælg hjemmehold
       updateSelectInput(session, "hold",
@@ -236,7 +219,8 @@ server <- function(input, output,session) {
       
       hold <- df_opg2 %>% 
         select(home) %>% 
-        distinct()
+        distinct() %>% 
+        arrange(home)
 
       
       # Opdaterer input til at vælg hjemmehold
@@ -329,7 +313,8 @@ server <- function(input, output,session) {
       hold1 <- df_af %>% 
         filter(label == input$kamp2) %>% 
         select(team.name) %>%
-        distinct()
+        distinct() %>% 
+        arrange(team.name)
       
       # Opdaterer input til at vælge spiller
       updateSelectInput(session, "hold3",
