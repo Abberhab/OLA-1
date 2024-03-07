@@ -8,7 +8,6 @@ library(jsonlite)
 library(ggsoccer)
 library(extrafont)
 
-setwd("D:\\DataAnalyseProjekter\\2Semester\\OLA1\\OPG4")
 
 #####Indhentning af data#####
 df <- readRDS("Shot_flat")
@@ -22,6 +21,11 @@ df <- df %>% rowwise() %>% mutate(homescore=str_split(score,"-")[[1]][1],
 df <- df %>% mutate(longinfo=paste0(match,"_",`matchId`))
 
 # Max value for slider
+df_goal_max <- df %>%
+  select(player.name,shot.isGoal,shot.xg) %>% 
+  group_by(player.name) %>% 
+  summarise(
+    Antal_mål = sum(shot.isGoal == TRUE))
 
 
 # Define UI for application that draws a histogram
@@ -37,8 +41,9 @@ ui <- fluidPage(
             sliderInput("mål",
                         "min antal mål:",
                         min = 1,
-                        max = 21,
-                        value = 15)
+                        max = max(df_goal_max$Antal_mål),
+                        value = 15,
+                        step = 1)
         ),
 
         # Show a plot of the generated distribution
@@ -309,8 +314,8 @@ server <- function(input, output,session) {
       # Variable til ggplot
       flest_afl_hold1 <- afleveringer1$team.name[which.max(afleveringer1$value)]
       
-      hold_data1 <- afleveringer1[afleveringer1$team.name == flest_afl_hold, ]
-      successrate1 <- hold_data$value[hold_data$variable == "TRUE"] / hold_data$value[hold_data$variable == "total"] * 100
+      hold_data1 <- afleveringer1[afleveringer1$team.name == flest_afl_hold1, ]
+      successrate1 <- hold_data1$value[hold_data1$variable == "TRUE"] / hold_data1$value[hold_data1$variable == "total"] * 100
       
       # ggplot
       
